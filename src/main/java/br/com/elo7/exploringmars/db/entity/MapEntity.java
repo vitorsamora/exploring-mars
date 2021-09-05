@@ -1,5 +1,6 @@
 package br.com.elo7.exploringmars.db.entity;
 
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,6 +13,11 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
+
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "map")
@@ -31,6 +37,16 @@ public class MapEntity {
     @OneToMany(targetEntity=ProbeEntity.class, fetch = FetchType.LAZY)
     @JoinColumn(name = "map_id")
     private Set<ProbeEntity> probeSet = new HashSet<ProbeEntity>();
+
+    @CreationTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "create_date")
+    private Date createDate;
+
+    @UpdateTimestamp
+    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "modify_date")
+    private Date modifyDate;
 
     public long getId() {
         return id;

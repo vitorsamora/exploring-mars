@@ -3,6 +3,8 @@ package br.com.elo7.exploringmars.db;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,8 +35,12 @@ public class DbConstraintsTest {
         return savedMapEntity.getId();
     }
 
-    private ProbeEntity createProbe(long mapId, int x, int y, Direction direction) {
+    private ProbeEntity createProbe(UUID resourceId, long mapId, int x, int y, Direction direction) {
+        if (resourceId == null) {
+            resourceId = UUID.randomUUID();
+        }
         ProbeEntity entity = new ProbeEntity();
+        entity.setResourceId(resourceId);
         entity.setMapId(mapId);
         entity.setX(x);
         entity.setY(y);
@@ -45,7 +51,7 @@ public class DbConstraintsTest {
     @Test
     public void givenMapAndProbe_whenConstraintsNotViolated_thenSave() throws Exception {
         long mapId = initMap();
-        ProbeEntity entity = createProbe(mapId, 1, 1, Direction.NORTH);
+        ProbeEntity entity = createProbe(null, mapId, 1, 1, Direction.NORTH);
         ProbeEntity savedEntity = probeRepository.save(entity);
         assertNotNull(savedEntity);
         assertNotNull(savedEntity.getId());
@@ -57,7 +63,7 @@ public class DbConstraintsTest {
         assertThrows(
             DataIntegrityViolationException.class, 
             () -> {
-                ProbeEntity entity = createProbe(mapId, 1, 1, null);
+                ProbeEntity entity = createProbe(null, mapId, 1, 1, null);
                 probeRepository.save(entity);
             }
         );
@@ -66,14 +72,14 @@ public class DbConstraintsTest {
     @Test
     public void givenMapAndProbe_whenNotEmptyPosition_thenConstraintViolationException() throws Exception {
         long mapId = initMap();
-        ProbeEntity entity = createProbe(mapId, 1, 1, Direction.NORTH);
+        ProbeEntity entity = createProbe(null, mapId, 1, 1, Direction.NORTH);
         ProbeEntity savedEntity = probeRepository.save(entity);
         assertNotNull(savedEntity);
         assertNotNull(savedEntity.getId());
         assertThrows(
             DataIntegrityViolationException.class, 
             () -> {
-                ProbeEntity entity2 = createProbe(mapId, 1, 1, Direction.EAST);
+                ProbeEntity entity2 = createProbe(null, mapId, 1, 1, Direction.EAST);
                 probeRepository.save(entity2);
             }
         );
@@ -84,7 +90,7 @@ public class DbConstraintsTest {
         assertThrows(
             DataIntegrityViolationException.class, 
             () -> {
-                ProbeEntity entity = createProbe(-1, 1, 1, Direction.NORTH);
+                ProbeEntity entity = createProbe(null, -1, 1, 1, Direction.NORTH);
                 probeRepository.save(entity);
             }
         );
