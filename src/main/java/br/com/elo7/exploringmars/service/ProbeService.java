@@ -15,7 +15,7 @@ import br.com.elo7.exploringmars.bean.CommandsResp;
 import br.com.elo7.exploringmars.bean.ProbeIdentifierResp;
 import br.com.elo7.exploringmars.bean.ProbeReq;
 import br.com.elo7.exploringmars.bean.ProbeResp;
-import br.com.elo7.exploringmars.db.MapRepository;
+import br.com.elo7.exploringmars.concurrency.MapCache;
 import br.com.elo7.exploringmars.db.ProbeRepository;
 import br.com.elo7.exploringmars.db.entity.MapEntity;
 import br.com.elo7.exploringmars.db.entity.ProbeEntity;
@@ -31,10 +31,10 @@ public class ProbeService {
 
     @Autowired
     private ProbeRepository probeRepository;
-    
-    @Autowired
-    private MapRepository mapRepository;
 
+    @Autowired
+    private MapCache mapCache;
+    
     public List<ProbeResp> getAllProbes() {
         List<ProbeResp> probes = new ArrayList<ProbeResp>();
         probeRepository.findAll().forEach(probeRecord -> {
@@ -53,19 +53,18 @@ public class ProbeService {
 
     public ProbeIdentifierResp addProbe(ProbeReq req) {
         ProbeEntity probe = ProbeHelper.fromReqToEntity(req);
-        MapEntity map = getMap(probe.getMapId());
-        checkPosition(map, probe);
-        probe.setResourceId(UUID.randomUUID());
-        probe = saveEntity(probe);
-        return ProbeHelper.fromEntityToIdentifierResp(probe);
-    }
-
-    private MapEntity getMap(long id) throws NotFoundException {
-        Optional<MapEntity> optMap = mapRepository.findById(id);
-        if (optMap.isPresent()) {
-            return optMap.get();
+        MapEntity cachedMap = mapCache.getMapReference(probe.getMapId());
+        try {
+            synchronized (cachedMap) {
+                checkPosition(cachedMap, probe);
+                probe.setResourceId(UUID.randomUUID());
+                probe = saveEntity(probe);
+                cachedMap.getProbeSet().add(probe);
+            }
+        } finally { 
+            mapCache.releaseMapReference(cachedMap.getId());
         }
-        throw new NotFoundException("Map not found");
+        return ProbeHelper.fromEntityToIdentifierResp(probe);
     }
 
     private void checkPosition(MapEntity map, ProbeEntity probe) 
@@ -88,10 +87,18 @@ public class ProbeService {
 
     public void deleteProbe(long id, UUID resourceId) {
         ProbeEntity probe = getProbeAndValidateId(id, resourceId);
+        MapEntity cachedMap = mapCache.getMapReference(probe.getMapId());
         try {
-            probeRepository.deleteById(probe.getId());
-        } catch (EmptyResultDataAccessException e) {
-            throw new NotFoundException("Probe not found");
+            synchronized (cachedMap) {
+                try {
+                    probeRepository.deleteById(probe.getId());
+                } catch (EmptyResultDataAccessException e) {
+                    throw new NotFoundException("Probe not found");
+                }
+                cachedMap.getProbeSet().remove(probe);
+            }
+        } finally {
+            mapCache.releaseMapReference(cachedMap.getId());
         }
     }
   
@@ -111,8 +118,13 @@ public class ProbeService {
     public CommandsResp updateProbe(long id, CommandsReq commandsReq) {
         List<Command> commands = parseCommandsString(commandsReq.getCommands());
         ProbeEntity probe = getProbeAndValidateId(id, commandsReq.getResourceId());
-        MapEntity map = getMap(probe.getMapId());
-        return executeCommands(map, probe, commands);
+        MapEntity cachedMap = mapCache.getMapReference(probe.getMapId());
+        try {
+            CommandsResp resp = executeCommands(cachedMap, probe, commands);
+            return resp;
+        } finally {
+            mapCache.releaseMapReference(cachedMap.getId());
+        }
     }
 
     private List<Command> parseCommandsString(String commandsStr) {
@@ -124,9 +136,10 @@ public class ProbeService {
         return commands;
     }
 
-    private CommandsResp executeCommands(MapEntity map, ProbeEntity probe, 
+    private CommandsResp executeCommands(MapEntity cachedMap, ProbeEntity probe, 
             List<Command> commands) {
         
+        // Update probe in memory
         for (Command command : commands) {
             switch (command) {
                 case TURN_RIGHT:
@@ -137,17 +150,21 @@ public class ProbeService {
                     break;
                 case MOVE:
                     // Only the MOVE commands can violate the map constraints
-                    map.getProbeSet().remove(probe);
-                    probe.move();
-                    try {
-                        checkPosition(map, probe);
-                        map.getProbeSet().add(probe);
-                        probe = saveEntity(probe);
-                    } catch (ProbeOutOfBoundsException | ProbeCollisionException e) {
-                        // Move back and return state
-                        probe.moveBack();
-                        return ProbeHelper.fromEntityToCommandsResp(probe, false, 
-                                e.getMessage());
+                    synchronized(cachedMap) {
+                        // Remove probe from set
+                        cachedMap.getProbeSet().remove(probe);
+                        probe.move();
+                        try {
+                            checkPosition(cachedMap, probe);
+                            cachedMap.getProbeSet().add(probe);
+                        } catch (ProbeOutOfBoundsException | ProbeCollisionException e) {
+                            // Move back, save and return state
+                            probe.moveBack();
+                            cachedMap.getProbeSet().add(probe);
+                            probe = saveEntity(probe);
+                            return ProbeHelper.fromEntityToCommandsResp(probe, false, 
+                                    e.getMessage());
+                        }
                     }
                     break;
             }
