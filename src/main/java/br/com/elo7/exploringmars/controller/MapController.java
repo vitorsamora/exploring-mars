@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -29,12 +30,12 @@ public class MapController {
     private MapService service;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<MapResp> findAll() {
+    public List<MapResp> getAllMaps() {
         return service.getAllMaps();
     }
 
     @GetMapping(path = {"/{id}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public MapDetailsResp findById(@PathVariable long id) {
+    public MapDetailsResp getMap(@PathVariable long id) {
         return service.getMap(id);
     }
 
@@ -48,6 +49,11 @@ public class MapController {
     @DeleteMapping(path ={"/{id}"})
     public void deleteMap(@PathVariable long id) {
         service.deleteMap(id);
+    }
+
+    @PutMapping(path ={"/{id}"})
+    public MapDetailsResp updateMap(@PathVariable long id, @Valid @RequestBody MapReq mapReq) {
+        return service.updateMap(id, mapReq);
     }
 
 }

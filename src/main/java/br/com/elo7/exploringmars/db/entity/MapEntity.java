@@ -81,7 +81,7 @@ public class MapEntity {
     }
 
     public boolean isOutOfBounds(int x, int y) {
-        return x > maxX || y > maxY;
+        return x < 0 || y < 0 || x > maxX || y > maxY;
     }
     
 }

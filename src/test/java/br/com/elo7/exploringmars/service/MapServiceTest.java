@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.elo7.exploringmars.bean.MapDetailsResp;
 import br.com.elo7.exploringmars.bean.MapReq;
 import br.com.elo7.exploringmars.bean.MapResp;
 import br.com.elo7.exploringmars.exception.NotFoundException;
@@ -84,6 +85,34 @@ public class MapServiceTest {
                 service.deleteMap(id);
             }
         );
+    }
+
+    @Test
+    public void givenMapToUpdate_whenMapDoesntExist_thenNotFoundException() throws Exception {
+        long id = -1;
+        MapReq mapReq = createMap(100, 100);
+        assertThrows(
+            NotFoundException.class, 
+            () -> {
+                service.updateMap(id, mapReq);
+            }
+        );
+    }
+
+    @Test
+    @Transactional
+    public void givenMapToUpdate_whenNewSizeIsBigger_thenUpdate() throws Exception {
+        MapReq mapReq = createMap(10, 20);
+        MapResp map = service.addMap(mapReq);
+        assertNotNull(map.getId());
+        
+        MapReq newMapReq = createMap(20, 40);
+        MapDetailsResp resp = service.updateMap(map.getId(), newMapReq);
+        
+        assertNotNull(resp);
+        assertEquals(map.getId(), resp.getId());
+        assertEquals(newMapReq.getMaxX(), resp.getMaxX());
+        assertEquals(newMapReq.getMaxY(), resp.getMaxY());
     }
 
 }

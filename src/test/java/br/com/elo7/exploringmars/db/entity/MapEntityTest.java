@@ -20,7 +20,7 @@ public class MapEntityTest {
     }
 
     @Test
-    public void givenMap_whenXCoordinateOutOfBounds_thenOutOfBounds() throws Exception {
+    public void givenMap_whenXCoordinateIsGreaterThanMax_thenOutOfBounds() throws Exception {
         MapEntity mapEntity = new MapEntity();
         mapEntity.setMaxX(MAX_SIZE);
         mapEntity.setMaxY(MAX_SIZE);
@@ -28,11 +28,27 @@ public class MapEntityTest {
     }
 
     @Test
-    public void givenMap_whenYCoordinateOutOfBounds_thenOutOfBounds() throws Exception {
+    public void givenMap_whenYCoordinateIsGreaterThanMax_thenOutOfBounds() throws Exception {
         MapEntity mapEntity = new MapEntity();
         mapEntity.setMaxX(MAX_SIZE);
         mapEntity.setMaxY(MAX_SIZE);
         assertTrue(mapEntity.isOutOfBounds(1, MAX_SIZE + 1));
+    }
+
+    @Test
+    public void givenMap_whenXCoordinateIsNegative_thenOutOfBounds() throws Exception {
+        MapEntity mapEntity = new MapEntity();
+        mapEntity.setMaxX(MAX_SIZE);
+        mapEntity.setMaxY(MAX_SIZE);
+        assertTrue(mapEntity.isOutOfBounds(-1, 1));
+    }
+
+    @Test
+    public void givenMap_whenYCoordinateIsNegative_thenOutOfBounds() throws Exception {
+        MapEntity mapEntity = new MapEntity();
+        mapEntity.setMaxX(MAX_SIZE);
+        mapEntity.setMaxY(MAX_SIZE);
+        assertTrue(mapEntity.isOutOfBounds(1, -1));
     }
 
 }

@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import br.com.elo7.exploringmars.bean.CommandsResp;
 import br.com.elo7.exploringmars.bean.ProbeIdentifierResp;
 import br.com.elo7.exploringmars.bean.ProbeReq;
 import br.com.elo7.exploringmars.bean.ProbeResp;
@@ -66,6 +67,28 @@ public class ProbeHelperTest {
         assertEquals(req.getX(), entity.getX());
         assertEquals(req.getY(), entity.getY());
         assertEquals(Direction.NORTH, entity.getDirection());
+    }
+
+    @Test
+    public void fromEntityToCommandsRespTest() throws Exception {
+        boolean completed = true;
+        String message = "message";
+        ProbeEntity entity = new ProbeEntity();
+        entity.setId(0);
+        entity.setResourceId(UUID.randomUUID());
+        entity.setMapId(1);
+        entity.setX(2);
+        entity.setY(3);
+        entity.setDirection(Direction.NORTH);
+
+        CommandsResp resp = ProbeHelper.fromEntityToCommandsResp(entity, completed, message);
+        assertEquals(entity.getId(), resp.getId());
+        assertEquals(entity.getMapId(), resp.getMapId());
+        assertEquals(entity.getX(), resp.getX());
+        assertEquals(entity.getY(), resp.getY());
+        assertEquals(entity.getDirection().getSymbol(), resp.getDirection());
+        assertEquals(completed, resp.isCompleted());
+        assertEquals(message, resp.getMessage());
     }
 
 }

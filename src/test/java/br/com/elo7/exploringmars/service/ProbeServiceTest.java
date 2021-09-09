@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.elo7.exploringmars.bean.CommandsReq;
+import br.com.elo7.exploringmars.bean.CommandsResp;
 import br.com.elo7.exploringmars.bean.MapReq;
 import br.com.elo7.exploringmars.bean.MapResp;
 import br.com.elo7.exploringmars.bean.ProbeIdentifierResp;
@@ -178,6 +180,64 @@ public class ProbeServiceTest {
             NotFoundException.class, 
             () -> {
                 service.deleteProbe(id, UUID.randomUUID());
+            }
+        );
+    }
+
+    @Test
+    @Transactional
+    public void givenProbeToUpdate_whenOk_thenUpdate() throws Exception {
+        long mapId = initMap();
+        ProbeReq req = createProbeReq(null, mapId, 1, 1, Direction.NORTH);
+        ProbeIdentifierResp probe = service.addProbe(req);
+        assertNotNull(probe.getId());
+        
+        long id = probe.getId();
+        CommandsReq commandsReq = new CommandsReq();
+        commandsReq.setResourceId(probe.getResourceId());
+        commandsReq.setCommands("MRMLMLLM");
+        CommandsResp resp = service.updateProbe(id, commandsReq);
+
+        assertEquals(Direction.SOUTH.getSymbol(), resp.getDirection());
+        assertEquals(true, resp.isCompleted());
+        assertEquals(id, resp.getId());
+        assertEquals(mapId, resp.getMapId());
+        assertEquals(2, resp.getX());
+        assertEquals(2, resp.getY());
+    }
+
+    @Test
+    @Transactional
+    public void givenProbeToUpdate_whenInvalidUUID_thenUnauthorizedException() throws Exception {
+        long mapId = initMap();
+        ProbeReq req = createProbeReq(null, mapId, 1, 1, Direction.NORTH);
+        ProbeIdentifierResp probe = service.addProbe(req);
+        assertNotNull(probe.getId());
+        
+        long id = probe.getId();
+        CommandsReq commandsReq = new CommandsReq();
+        commandsReq.setResourceId(UUID.randomUUID());
+        commandsReq.setCommands("MRMLMLLM");
+
+        assertThrows(
+            UnauthorizedException.class, 
+            () -> {
+                service.updateProbe(id, commandsReq);
+            }
+        );
+    }
+
+    @Test
+    public void givenProbeToUpdate_whenMapDoesntExist_thenNotFoundException() throws Exception {
+        long id = -1;
+        CommandsReq commandsReq = new CommandsReq();
+        commandsReq.setResourceId(UUID.randomUUID());
+        commandsReq.setCommands("MRMLMLLM");
+
+        assertThrows(
+            NotFoundException.class, 
+            () -> {
+                service.updateProbe(id, commandsReq);
             }
         );
     }

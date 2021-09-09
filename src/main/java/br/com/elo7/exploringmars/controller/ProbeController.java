@@ -11,11 +11,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import br.com.elo7.exploringmars.bean.CommandsReq;
+import br.com.elo7.exploringmars.bean.CommandsResp;
 import br.com.elo7.exploringmars.bean.ProbeIdentifierReq;
 import br.com.elo7.exploringmars.bean.ProbeReq;
 import br.com.elo7.exploringmars.bean.ProbeResp;
@@ -30,12 +33,12 @@ public class ProbeController {
     private ProbeService service;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ProbeResp> findAll() {
+    public List<ProbeResp> getAllProbes() {
         return service.getAllProbes();
     }
 
     @GetMapping(path = {"/{id}"}, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ProbeResp findById(@PathVariable long id) {
+    public ProbeResp getProbe(@PathVariable long id) {
         return service.getProbe(id);
     }
 
@@ -49,6 +52,11 @@ public class ProbeController {
     @DeleteMapping(path ={"/{id}"})
     public void deleteProbe(@PathVariable long id, @Valid @RequestBody ProbeIdentifierReq probeIdentifierReq) {
         service.deleteProbe(id, probeIdentifierReq.getResourceId());
+    }
+
+    @PutMapping(path ={"/{id}"})
+    public CommandsResp updateProbe(@PathVariable long id, @Valid @RequestBody CommandsReq commandsReq) {
+        return service.updateProbe(id, commandsReq);
     }
     
 }
