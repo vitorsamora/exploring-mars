@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,8 +14,6 @@ import br.com.elo7.exploringmars.exception.NotFoundException;
 @Component
 public class MapCache {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(MapCache.class);
-
     private Map<Long, MapCacheItem> hashMap;
 
     @Autowired
@@ -42,8 +38,6 @@ public class MapCache {
      * @throws NotFoundException
      */
     public synchronized MapEntity getMapReference(long id) throws NotFoundException {
-        LOGGER.info("Map size = {}", this.hashMap.size());
-
         if (hashMap.containsKey(id)) {
             MapCacheItem cache = hashMap.get(id);
             cache.incrementCounter();
